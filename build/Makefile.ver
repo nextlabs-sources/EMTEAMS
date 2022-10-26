@@ -1,0 +1,16 @@
+##
+#
+# Produce version information
+#
+# Description:
+#   This file should be included in top-level Makefile
+# http://sharepoint/sites/support/release/Lists/Current%20Releases/AllItems.aspx
+#
+##
+
+VERSION_PRODUCT_SPE			= NextLabs Enforcer for Microsoft Teams
+
+VERSION_MAJOR_SPE			= 1
+VERSION_MINOR_SPE			= 0
+VERSION_MAINTENANCE_SPE		= 0
+VERSION_PATCH_SPE			= 0

@@ -1,0 +1,88 @@
+
+#
+# Check for errors
+#
+
+ifeq ($(NLBUILDROOT),)
+  $(error ERROR: NLBUILDROOT undefined)
+endif
+
+ifeq ($(NLEXTERNALDIR),)
+  $(error ERROR: NLEXTERNALDIR undefined)
+endif
+
+ifeq ($(NLEXTERNALDIR2),)
+  $(error ERROR: NLEXTERNALDIR2 undefined)
+endif
+
+ifeq ($(XLIB_POLICY_ADAPTOR_SDK_ZIP_FILE),)
+  $(error ERROR: XLIB_POLICY_ADAPTOR_SDK_ZIP_FILE undefined)
+endif
+
+#
+# Default values
+#
+
+ifneq ($(BUILDTYPE), debug)
+	BUILDTYPE=release
+endif
+
+XLIB_DIR=$(NLBUILDROOT)/xlib
+XLIB_HEADER_DIR=$(XLIB_DIR)/include
+XLIB_BIN32_DIR=$(XLIB_DIR)/release_win_x86
+XLIB_BIN64_DIR=$(XLIB_DIR)/release_win_x64
+XLIB_DOTNET_DIR=$(XLIB_DIR)/release_dotnet
+
+$(info )
+$(info ==========================================================================)
+$(info BUILDTYPE=$(BUILDTYPE))
+$(info XLIB_POLICY_ADAPTOR_SDK_ZIP_FILE=$(XLIB_POLICY_ADAPTOR_SDK_ZIP_FILE))
+$(info NLBUILDROOT=$(NLBUILDROOT))
+$(info NLEXTERNALDIR=$(NLEXTERNALDIR))
+$(info NLEXTERNALDIR2=$(NLEXTERNALDIR2))
+$(info ==========================================================================)
+
+
+.PHONY: all
+all: prepare_header prepare_fate_x86 prepare_fate_x64 prepare_fate_dotnet
+
+.PHONY: prepare_header
+prepare_header:
+	mkdir -p "$(XLIB_HEADER_DIR)"
+	unzip -jo "$(XLIB_POLICY_ADAPTOR_SDK_ZIP_FILE)" \
+		'PolicyAdapterSDK/include/resattrlib.h' \
+		'PolicyAdapterSDK/include/resattrmgr.h' \
+		'PolicyAdapterSDK/include/celog.h' \
+		'PolicyAdapterSDK/include/celog_policy_file.hpp' \
+		-d "$(XLIB_HEADER_DIR)"
+
+.PHONY: prepare_fate_x86
+prepare_fate_x86:
+	mkdir -p $(XLIB_BIN32_DIR)
+	unzip -jo "$(XLIB_POLICY_ADAPTOR_SDK_ZIP_FILE)" \
+		'PolicyAdapterSDK/win_x86/resattrlib32.lib' \
+		'PolicyAdapterSDK/win_x86/resattrmgr32.lib' \
+		'PolicyAdapterSDK/win_x86/celog32.dll' \
+		'PolicyAdapterSDK/installer/win_x86/nlQuench.exe' \
+		'PolicyAdapterSDK/installer/win_x86/PluginInstallerSDK32.dll' \
+		-d $(XLIB_BIN32_DIR)
+
+.PHONY: prepare_fate_x64
+prepare_fate_x64:
+	mkdir -p $(XLIB_BIN64_DIR)
+	unzip -jo "$(XLIB_POLICY_ADAPTOR_SDK_ZIP_FILE)" \
+		'PolicyAdapterSDK/win_x64/resattrlib.lib' \
+		'PolicyAdapterSDK/win_x64/resattrmgr.lib' \
+		'PolicyAdapterSDK/win_x64/celog.dll' \
+		'PolicyAdapterSDK/installer/win_x64/nlQuench.exe' \
+		'PolicyAdapterSDK/installer/win_x64/PluginInstallerSDK.dll' \
+		-d $(XLIB_BIN64_DIR)
+
+.PHONY: prepare_fate_dotnet
+prepare_fate_dotnet:
+	mkdir -p $(XLIB_DOTNET_DIR)
+#	unzip -jo "$(XLIB_POLICY_ADAPTOR_SDK_ZIP_FILE)" 'PolicyAdapterSDK/win_cs/NextLabs.CSCInvoke.dll' -d $(XLIB_DOTNET_DIR)
+
+.PHONY: clean
+clean:
+	rm -rf $(XLIB_DIR)

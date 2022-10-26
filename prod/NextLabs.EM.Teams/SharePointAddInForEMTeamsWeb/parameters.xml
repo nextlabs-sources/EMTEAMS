@@ -1,0 +1,22 @@
+﻿<parameters>
+  <parameter name="HostedAppHostNameOverride" defaultValue="domain.com:port" >
+    <parameterEntry
+      kind="XmlFile"
+      scope="\\Web.config$"
+      match="/configuration/appSettings/add[@key='HostedAppHostNameOverride']/@value" />
+  </parameter>
+  <parameter name="remoteAppUrl" defaultValue="https://domain.com:port" >
+  </parameter>
+    <parameter name="ClientId" defaultValue="client id of sharepoint online app" >
+    <parameterEntry
+      kind="XmlFile"
+      scope="\\Web.config$"
+      match="/configuration/appSettings/add[@key='ClientId']/@value" />
+  </parameter>
+  <parameter name="ClientSecret" defaultValue="client secret of sharepoint online app" >
+    <parameterEntry
+      kind="XmlFile"
+      scope="\\Web.config$"
+      match="/configuration/appSettings/add[@key='ClientSecret']/@value" />
+  </parameter>
+</parameters>

@@ -1,0 +1,208 @@
+# Make file to publish pcv and release builds
+#
+# Installers and build artifacts are published to \\nextlabs.com\share\data\build\pcv
+# or \\nextlabs.com\share\data\build\release. Typically, \\nextlabs.com\share\data is mapped
+# to s:/.
+#
+# The following variables must be defined in commandline:
+#	VERSION_BUILD_SHORT
+#	BUILD_DATE
+#
+# Example:
+#	make -f Makefile.publish VERSION_BUILD_SHORT=10001 BUILD_DATE=20110501 TYPE=pcv
+#	make -k -f Makefile.publish VERSION_BUILD_SHORT=10001 BUILD_DATE=20110501 TYPE=pcv installer_local
+#	make -f Makefile.publish VERSION_BUILD_SHORT=10001 BUILD_DATE=20110501 TYPE=release
+#	make -f Makefile.publish VERSION_BUILD_SHORT=10001 BUILD_DATE=20110501 TYPE=release spe2010_sync
+#	make -f Makefile.publish VERSION_BUILD_SHORT=10001 BUILD_DATE=20110501 TYPE=release archive_bin
+
+
+#
+# Check for errors
+#
+
+ifeq ($(NLBUILDROOT),)
+  $(error NLBUILDROOT undefined.)
+endif
+
+ifeq ($(VERSION_BUILD_SHORT),)
+  $(error VERSION_BUILD_SHORT undefined.)
+endif
+
+ifeq ($(BUILD_DATE),)
+  $(error BUILD_DATE undefined.)
+endif
+
+ifeq ($(TYPE),)
+  $(error TYPE undefined.)
+endif
+
+ifneq ($(TYPE), pcv)
+ifneq ($(TYPE), release)
+  $(error Invalid TYPE $(TYPE).)
+endif
+endif
+
+ifeq ($(REPOSITORY_ROOT),)
+  $(error REPOSITORY_ROOT undefined.)
+endif
+
+ifeq ($(SYNC_FOLDER_ROOT),)
+  $(error SYNC_FOLDER_ROOT undefined.)
+endif
+
+
+#
+# Constants
+#
+
+include $(NLBUILDROOT)/build/Makefile.ver
+
+VERSION_STR_SPE=$(VERSION_MAJOR_SPE).$(VERSION_MINOR_SPE).$(VERSION_MAINTENANCE_SPE).$(VERSION_PATCH_SPE)
+
+PUBLISH_LOCAL_EMTEAMS_DIR=$(REPOSITORY_ROOT)/MicrosoftTeamsEnforcer/$(VERSION_STR_SPE)/$(VERSION_BUILD_SHORT)
+PUBLISH_LOCAL_ARTIFACT_DIR=$(REPOSITORY_ROOT)/artifacts/MicrosoftTeamsEnforcer/$(VERSION_STR_SPE)/$(VERSION_BUILD_SHORT)
+
+PUBLISH_CDC_SYNC5MB_DIR=$(SYNC_FOLDER_ROOT)/5MB
+PUBLISH_CDC_SYNCLARGE_DIR=$(SYNC_FOLDER_ROOT)/MoreThan20MB
+
+ZIP_FILE_NAME_BIN=spe-$(VERSION_STR_SPE)-$(VERSION_BUILD_SHORT)-$(TYPE)-$(BUILD_DATE)-bin.zip
+ZIP_FILE_NAME_XLIB=spe-$(VERSION_STR_SPE)-$(VERSION_BUILD_SHORT)-$(TYPE)-$(BUILD_DATE)-xlib.zip
+ZIP_FILE_NAME_INSTALL=spe-$(VERSION_STR_SPE)-$(VERSION_BUILD_SHORT)-$(TYPE)-$(BUILD_DATE)-install.zip
+BUILD_MANIFEST_FILE_NAME=build.manifest
+
+TOP_BIN_DIR=$(NLBUILDROOT)/bin
+XLIB_DIR=$(NLBUILDROOT)/xlib
+INSTALL_DIR=$(NLBUILDROOT)/install
+INSTALL_BUILD_EMTEAMS_DIR=$(INSTALL_DIR)/emteamweb
+
+
+#
+# Info
+#
+
+$(info --------------------------------------------------------------)
+$(info [Build])
+$(info TYPE                       = $(TYPE)) 
+$(info VERSION_BUILD_SHORT        = $(VERSION_BUILD_SHORT)) 
+$(info BUILD_DATE                 = $(BUILD_DATE)) 
+$(info [Path])
+$(info PUBLISH_LOCAL_EMTEAMS_DIR      = $(PUBLISH_LOCAL_EMTEAMS_DIR)) 
+$(info PUBLISH_LOCAL_ARTIFACT_DIR = $(PUBLISH_LOCAL_ARTIFACT_DIR))
+$(info PUBLISH_CDC_SYNC5MB_DIR    = $(PUBLISH_CDC_SYNC5MB_DIR)) 
+$(info PUBLISH_CDC_SYNCLARGE_DIR  = $(PUBLISH_CDC_SYNCLARGE_DIR)) 
+$(info TOP_BIN_DIR                = $(TOP_BIN_DIR)) 
+$(info XLIB_DIR                   = $(XLIB_DIR)) 
+$(info INSTALL_DIR                = $(INSTALL_DIR)) 
+$(info [File])
+$(info ZIP_FILE_NAME_BIN          = $(ZIP_FILE_NAME_BIN)) 
+$(info ZIP_FILE_NAME_XLIB         = $(ZIP_FILE_NAME_XLIB)) 
+$(info ZIP_FILE_NAME_INSTALL      = $(ZIP_FILE_NAME_INSTALL)) 
+$(info --------------------------------------------------------------)
+$(info )
+
+
+#
+# Targets
+#
+
+.PHONY: all
+all: product archive
+
+.PHONY: product
+product: emteams 
+
+.PHONY: emteams
+spe2019: emteams_local emteams_sync
+
+.PHONY: emteams_local
+emteams_local:
+	@echo "Publishing emteams package..."
+	@if [ ! -d $(INSTALL_DIR) ]; then \
+		echo "$(INSTALL_DIR) does not exist" ; \
+		exit 1 ; \
+	fi
+	@if [ ! -d $(PUBLISH_LOCAL_EMTEAMS_DIR) ]; then \
+		mkdir -p $(PUBLISH_LOCAL_EMTEAMS_DIR) ; \
+	fi
+	cp -f $(INSTALL_BUILD_EMTEAMS_DIR)/*.zip $(PUBLISH_LOCAL_EMTEAMS_DIR)
+	ls -l $(PUBLISH_LOCAL_EMTEAMS_DIR)
+	@echo "[BUILD MANIFEST] Product Name         : NextLabs Enforcer for Microsoft Teams"
+	@echo "[BUILD MANIFEST]   Installer Location : $(PUBLISH_LOCAL_EMTEAMS_DIR)"
+	@echo "[BUILD MANIFEST]   Installer Package  : $$(cd $(INSTALL_BUILD_EMTEAMS_DIR); ls -1 *.zip | tr '\n' ' ')"
+
+.PHONY: emteams_sync
+emteams_sync:
+	@echo "Publishing emteams package to sync folder..."
+	@if [ ! -d $(INSTALL_BUILD_EMTEAMS_DIR) ]; then \
+		echo "$(INSTALL_BUILD_EMTEAMS_DIR) does not exist" ; \
+		exit 1 ; \
+	fi
+	@if [ ! -d $(PUBLISH_CDC_SYNCLARGE_DIR) ]; then \
+		mkdir -p $(PUBLISH_CDC_SYNCLARGE_DIR) ; \
+	fi
+	cp -f $(INSTALL_BUILD_EMTEAMS_DIR)/*.zip $(PUBLISH_CDC_SYNCLARGE_DIR)
+.PHONY: archive
+archive: archive_bin archive_xlib archive_install
+
+.PHONY: archive_bin
+archive_bin:
+	@echo "Archiving top-level bin directory"
+	@if [ ! -d $(TOP_BIN_DIR) ]; then \
+		echo "$(TOP_BIN_DIR) does not exist" ; \
+		exit 1 ; \
+	fi
+	@if [ ! -d $(PUBLISH_LOCAL_ARTIFACT_DIR) ]; then \
+		mkdir -p $(PUBLISH_LOCAL_ARTIFACT_DIR) ; \
+	fi
+	@if [ ! -d $(PUBLISH_CDC_SYNC5MB_DIR) ]; then \
+		mkdir -p $(PUBLISH_CDC_SYNC5MB_DIR) ; \
+	fi
+	cp -f $(NLBUILDROOT)/build.config* $(NLBUILDROOT)/bin
+	cp -f $(NLBUILDROOT)/build*.log $(NLBUILDROOT)/bin
+	cd $(NLBUILDROOT); zip -r -b . $(PUBLISH_LOCAL_ARTIFACT_DIR)/$(ZIP_FILE_NAME_BIN) bin -x bin/installer/*.zip
+	cp -f $(PUBLISH_LOCAL_ARTIFACT_DIR)/$(ZIP_FILE_NAME_BIN) $(PUBLISH_CDC_SYNC5MB_DIR)
+	ls -l $(PUBLISH_LOCAL_ARTIFACT_DIR) 
+	@echo "[BUILD MANIFEST] Archive: $(PUBLISH_LOCAL_ARTIFACT_DIR)/$(ZIP_FILE_NAME_BIN)"
+
+.PHONY: archive_xlib
+archive_xlib:
+	@echo "Archiving build tree xlib directory"
+	@if [ ! -d $(XLIB_DIR) ]; then \
+		echo "$(XLIB_DIR) does not exist" ; \
+		exit 1 ; \
+	fi
+	@if [ ! -d $(PUBLISH_LOCAL_ARTIFACT_DIR) ]; then \
+		mkdir -p $(PUBLISH_LOCAL_ARTIFACT_DIR) ; \
+	fi
+	cd $(NLBUILDROOT); zip -r -b . $(PUBLISH_LOCAL_ARTIFACT_DIR)/$(ZIP_FILE_NAME_XLIB) xlib
+	cp -f $(PUBLISH_LOCAL_ARTIFACT_DIR)/$(ZIP_FILE_NAME_XLIB) $(PUBLISH_CDC_SYNC5MB_DIR)
+	ls -l $(PUBLISH_LOCAL_ARTIFACT_DIR)
+	@echo "[BUILD MANIFEST] Archive: $(PUBLISH_LOCAL_ARTIFACT_DIR)/$(ZIP_FILE_NAME_XLIB)"
+
+.PHONY: archive_install
+archive_install:
+	@echo "Archiving installer build directory"
+	@if [ ! -d $(INSTALL_DIR) ]; then \
+		echo "$(INSTALL_DIR) does not exist" ; \
+		exit 1 ; \
+	fi
+	@if [ ! -d $(PUBLISH_LOCAL_ARTIFACT_DIR) ]; then \
+		mkdir -p $(PUBLISH_LOCAL_ARTIFACT_DIR) ; \
+	fi
+	cd $(NLBUILDROOT); zip -D -b . $(PUBLISH_LOCAL_ARTIFACT_DIR)/$(ZIP_FILE_NAME_INSTALL) *
+	cd $(NLBUILDROOT); zip -r -b . $(PUBLISH_LOCAL_ARTIFACT_DIR)/$(ZIP_FILE_NAME_INSTALL) build install -x \*setup\*.zip
+	ls -l $(PUBLISH_LOCAL_ARTIFACT_DIR)
+	@echo "[BUILD MANIFEST] Archive: $(PUBLISH_LOCAL_ARTIFACT_DIR)/$(ZIP_FILE_NAME_INSTALL)"
+
+.PHONY: manifest
+manifest:
+	@echo "Publish build manifest to artifacts directory"
+	@if [ ! -f $(BUILD_MANIFEST_FILE_NAME) ]; then \
+		echo "$(BUILD_MANIFEST_FILE_NAME) does not exist" ; \
+		exit 1 ; \
+	fi
+	@if [ ! -d $(PUBLISH_LOCAL_ARTIFACT_DIR) ]; then \
+		mkdir -p $(PUBLISH_LOCAL_ARTIFACT_DIR) ; \
+	fi
+	cp -f $(NLBUILDROOT)/$(BUILD_MANIFEST_FILE_NAME) $(PUBLISH_LOCAL_ARTIFACT_DIR)
+	ls -l $(PUBLISH_LOCAL_ARTIFACT_DIR)

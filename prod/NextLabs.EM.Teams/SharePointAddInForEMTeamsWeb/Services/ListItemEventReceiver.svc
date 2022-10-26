@@ -1,0 +1,1 @@
+﻿<%@ ServiceHost Language="C#" Debug="true" Service="SharePointAddInForEMTeamsWeb.Services.ListItemEventReceiver" CodeBehind="ListItemEventReceiver.svc.cs" %>

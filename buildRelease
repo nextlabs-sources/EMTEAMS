@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# DESCRIPTION
+#	Invoke release build
+#
+# USAGE:
+#	Steps to invoke this script.
+#		export NLEXTERNALDIR=<path>
+#		export NLEXTERNALDIR2=<path>
+#		export BUILD_NUMBER=<#>
+#		source setEnv
+#		./buildRelease
+#
+# HUDSON BUILD:
+#	cd $WORKSPACE
+#	export NLEXTERNALDIR=c:/hudson/jobs/external_latest/workspace
+#	export NLEXTERNALDIR2=c:/hudson/jobs/external_main_latest/workspace
+#	source setEnv
+#	./buildRelease
+#
+# Build Options:
+#	make -f build/Makefile.compile || exit $?
+#	make -f build/Makefile.compile compile install || exit $?
+#
+# Publish Options:
+#	make -f build/Makefile.publish TYPE=release || exit $?
+#	make -f build/Makefile.publish TYPE=release spe archive || exit $
+
+
+LOG_FILE=buildRelease.log
+BUILD_MANIFEST_FILE=build.manifest
+
+(
+set -x
+# Extract Perforce Workspace and Hudson info (only if running on Hudson)
+if [ "X${JENKINS_HOME}" != "X" -a -f ${JENKINS_HOME}/jobs/${JOB_NAME}/config.xml ]; then
+	build/getGitWorkspaceInfo.pl ${JENKINS_HOME}/jobs/${JOB_NAME}/config.xml
+fi
+
+# Prepare environment
+./configure --type=release || exit $?
+source build.config
+
+# Prepare dependencies
+# make -f build/Makefile.xlib
+
+
+# Compile code and build installers
+make -f build/Makefile.compile compile install || exit $?
+
+
+
+set +x
+echo
+echo
+echo "####################### BUILD MANIFEST CONTENTS ########################"
+cat ${WORKSPACE}/${BUILD_MANIFEST_FILE}
+echo "########################################################################"
+) 2>&1 | tee $LOG_FILE
+
+exit ${PIPESTATUS[0]}

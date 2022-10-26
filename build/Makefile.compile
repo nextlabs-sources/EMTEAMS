@@ -1,0 +1,111 @@
+# Make file to build different product binaries and installers
+#
+# USAGE
+#	You must run ./configure to generate build.config and source build.config before
+#	running this script. You can also edit build.config if desired. You may refer to 
+#	./buildPcv or ./buildRelease on how to run this script.
+#
+# IMPORTANT: 
+#	In general, we should compile Java projects first because C projects 
+#	often depend on JNI header files.
+#
+# Example:
+#	make -f build/Makefile.compile
+#	make -f build/Makefile.compile compile
+#	make -f build/Makefile.compile compile_c
+#	make -f build/Makefile.compile compile_cs
+#	make -f build/Makefile.compile compile_cs2019 compile_cs2016
+#	make -f build/Makefile.compile install
+#	make -f build/Makefile.compile install_2019 install_wfpa
+#	make -f build/Makefile.compile clean
+
+
+#
+# Check for errors
+#
+
+ifeq ($(CONFIG_TYPE),)
+  $(error CONFIG_TYPE undefined.)
+endif
+
+ifeq ($(NLBUILDROOT),)
+  $(error NLBUILDROOT undefined.)
+endif
+
+
+#
+# Show variables
+#
+
+$(info --------------------------------------------------------------)
+$(info [Build Configuration])
+$(info CONFIG_TYPE                = $(CONFIG_TYPE)) 
+$(info VERSION_BUILD              = $(VERSION_BUILD)) 
+$(info VERSION_BUILD_SHORT        = $(VERSION_BUILD_SHORT)) 
+$(info BUILDTYPE                  = $(BUILDTYPE)) 
+$(info BUILD_DATE                 = $(BUILD_DATE)) 
+$(info BUILD_DATE_LONG            = $(BUILD_DATE_LONG)) 
+$(info PREFAST                    = $(PREFAST)) 
+$(info OFFICIALCERT               = $(OFFICIALCERT)) 
+$(info NLBUILDROOT                = $(NLBUILDROOT)) 
+$(info NLEXTERNALDIR              = $(NLEXTERNALDIR)) 
+$(info NLEXTERNALDIR2             = $(NLEXTERNALDIR2)) 
+$(info MAKE_CFLAGS_32             = $(MAKE_CFLAGS_32)) 
+$(info MAKE_CFLAGS_64             = $(MAKE_CFLAGS_64)) 
+$(info MAKE_CSFLAGS               = $(MAKE_CSFLAGS)) 
+$(info MAKE_INSTALLFLAGS          = $(MAKE_INSTALLFLAGS)) 
+$(info --------------------------------------------------------------)
+
+
+#
+# Targets
+#
+
+.PHONY: all
+all: compile install
+
+.PHONY: compile
+compile: compile_cs
+
+
+
+# Compile EMTeams
+.PHONY: compile_cs
+compile_cs:
+	@echo "INFO: Compile C# code"
+	cd $(NLBUILDROOT); make $(MAKE_CSFLAGS) TARGETSFILE=prod/targets
+
+.PHONY: install
+install:
+	@echo "INFO: Create EMTeams installer"
+	cd $(NLBUILDROOT)/install; make $(MAKE_INSTALLFLAGS)
+
+.PHONY: clean
+clean: clean_output clean_proj clean_install clean_find_leftover
+
+.PHONY: clean_output
+clean_output:
+	@echo "INFO: Clean log files and top-level bin directories"
+	rm -f $(NLBUILDROOT)/build.config $(NLBUILDROOT)/*.log
+	if [ -d $(NLBUILDROOT)/bin/release_win_x86 ] || [ -d $(NLBUILDROOT)/bin/debug_win_x86 ]			\
+		|| [ -d $(NLBUILDROOT)/bin/release_win_x64 ] || [ -d $(NLBUILDROOT)/bin/debug_win_x64 ]		\
+		|| [ -d $(NLBUILDROOT)/bin/dotnet ] || [ -d $(NLBUILDROOT)/bin/installer ]; then			\
+		rm -rf $(NLBUILDROOT)/bin ;																	\
+	fi
+
+.PHONY: clean_proj
+clean_proj:
+	@echo "INFO: Clean projects"
+	cd $(NLBUILDROOT); make TARGETSFILE=prod/targets clean
+	cd $(NLBUILDROOT); make TARGETSFILE=prod/targets.cs clean
+
+.PHONY: clean_install
+clean_install:
+	@echo "INFO: Clean installers"
+	cd $(NLBUILDROOT); make $(MAKE_INSTALLFLAGS) TARGETSFILE=install/targets clean
+
+.PHONY: clean_find_leftover
+clean_find_leftover:
+	@echo "INFO: Check for leftovers"
+	find $(NLBUILDROOT) -name "*.exe" -o -name "*.dll" -o -name "*.msi" -o -name "*.o" -o -name "*.obj" \
+		-o -name "*.pdb" -o -name "*.ncb" -o -name "*.suo"
